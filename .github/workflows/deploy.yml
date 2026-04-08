@@ -21,7 +21,14 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout pages repo
+        uses: actions/checkout@v4
+
+      - name: Checkout nekte source (for API doc generation)
+        uses: actions/checkout@v4
+        with:
+          repository: nekte-protocol/nekte
+          path: nekte-source
 
       - uses: pnpm/action-setup@v4
         with:
@@ -32,9 +39,29 @@ jobs:
           node-version: 22
           cache: pnpm
 
-      - run: pnpm install --frozen-lockfile
+      - name: Install pages dependencies
+        run: pnpm install --frozen-lockfile
 
-      - run: pnpm build
+      - name: Install nekte dependencies (for TypeDoc)
+        run: pnpm install --frozen-lockfile
+        working-directory: nekte-source
+
+      - name: Generate API docs from nekte source
+        run: |
+          npx typedoc \
+            --plugin typedoc-plugin-markdown \
+            --out src/content/docs/api/typescript \
+            --entryPoints nekte-source/packages/core/src/index.ts \
+                          nekte-source/packages/client/src/index.ts \
+                          nekte-source/packages/server/src/index.ts \
+            --tsconfig nekte-source/tsconfig.json \
+            --skipErrorChecking
+
+      - name: Post-process API docs (add Starlight frontmatter)
+        run: node scripts/process-api-docs.mjs
+
+      - name: Build website
+        run: pnpm build
 
       - uses: actions/upload-pages-artifact@v3
         with:
