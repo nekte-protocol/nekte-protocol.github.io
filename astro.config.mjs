@@ -12,7 +12,7 @@ export default defineConfig({
         github: 'https://github.com/nekte-protocol/nekte',
       },
       editLink: {
-        baseUrl: 'https://github.com/nekte-protocol/nekte/edit/main/website/',
+        baseUrl: 'https://github.com/nekte-protocol/nekte-protocol.github.io/edit/main/',
       },
       head: [
         {

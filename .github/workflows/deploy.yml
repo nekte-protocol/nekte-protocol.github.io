@@ -24,11 +24,17 @@ jobs:
       - name: Checkout pages repo
         uses: actions/checkout@v4
 
-      - name: Checkout nekte source (for API doc generation)
+      - name: Checkout nekte TypeScript SDK
         uses: actions/checkout@v4
         with:
           repository: nekte-protocol/nekte
           path: nekte-source
+
+      - name: Checkout nekte Python SDK
+        uses: actions/checkout@v4
+        with:
+          repository: nekte-protocol/nekte-python
+          path: nekte-python
 
       - uses: pnpm/action-setup@v4
         with:
@@ -39,14 +45,19 @@ jobs:
           node-version: 22
           cache: pnpm
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
       - name: Install pages dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Install nekte dependencies (for TypeDoc)
+      - name: Install nekte TS dependencies (for TypeDoc)
         run: pnpm install --frozen-lockfile
         working-directory: nekte-source
 
-      - name: Generate API docs from nekte source
+      # --- TypeScript API docs ---
+      - name: Generate TypeScript API docs
         run: |
           npx typedoc \
             --plugin typedoc-plugin-markdown \
@@ -57,9 +68,19 @@ jobs:
             --tsconfig nekte-source/tsconfig.json \
             --skipErrorChecking
 
-      - name: Post-process API docs (add Starlight frontmatter)
+      - name: Post-process TypeScript API docs
         run: node scripts/process-api-docs.mjs
 
+      # --- Python API docs ---
+      - name: Install Python SDK and pdoc
+        run: |
+          pip install pdoc
+          pip install ./nekte-python
+
+      - name: Generate Python API docs
+        run: node scripts/generate-python-docs.mjs
+
+      # --- Build & Deploy ---
       - name: Build website
         run: pnpm build
 
